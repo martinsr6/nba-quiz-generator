@@ -19,6 +19,7 @@
     "firebase": "^10.13.0",
     "framer-motion": "^11.3.31",
     "lucide-react": "^0.436.0",
+    "nba-api-client": "^1.1.2",
     "next": "14.2.7",
     "openai": "^4.85.4",
     "react": "^18",

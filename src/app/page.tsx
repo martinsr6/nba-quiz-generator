@@ -21,40 +21,49 @@ interface QuizData {
 // Quiz prompts by difficulty level
 const QUIZ_PROMPTS = {
   1: [
-    "Every NBA MVP since 2010",
-    "NBA champions from the last 10 years",
-    "Players who scored 50+ points in a game last season",
-    "Current NBA players with multiple All-Star appearances",
-    "NBA Rookie of the Year winners since 2015"
+    "NBA champions from the last 5 years",
+    "NBA MVP winners since 2015",
+    "NBA Finals MVPs since 2015",
+    "NBA teams in the Eastern Conference",
+    "NBA teams in the Western Conference"
   ],
   2: [
-    "Every NBA Finals MVP since 2000",
-    "Players who averaged 25+ points per game last season",
-    "NBA Defensive Player of the Year winners since 2010",
-    "Players with multiple scoring titles since 2000",
-    "NBA champions from 2000-2010"
+    "NBA champions from the last 10 years",
+    "NBA MVP winners since 2010",
+    "Players who scored 50+ points in a game last season",
+    "Current NBA All-Stars",
+    "NBA Rookie of the Year winners since 2010"
   ],
   3: [
-    "Every NBA MVP since 1990",
-    "Players with 60+ point games since 2000",
-    "Every NBA scoring champion since 2000",
-    "Players with multiple triple-doubles in a playoff series",
-    "NBA Sixth Man of the Year winners since 2000"
+    "NBA champions since 2000",
+    "NBA MVPs since 2000",
+    "Players who averaged 25+ points per game last season",
+    "NBA Defensive Player of the Year winners since 2000",
+    "Players with multiple scoring titles since 2000"
   ],
   4: [
+    "NBA champions since 1990",
+    "NBA MVPs since 1980",
+    "Players with 60+ point games since 2000",
     "Every NBA scoring champion since 1990",
-    "Players with 70+ point games in NBA history",
-    "NBA players with 20+ rebounds in a game since 2015",
-    "Players who have led the league in assists",
-    "NBA Defensive Player of the Year winners since 1990"
+    "Players with multiple triple-doubles in a playoff series"
   ],
   5: [
-    "Top 5 leaders in Points per game each year since 2000",
     "Every player to average a triple-double for a season",
-    "Players with 5+ steals in a playoff game",
+    "Players with 70+ point games in NBA history",
     "Every player with 10+ three-pointers in a game",
-    "Players who have led the league in blocks for multiple seasons"
+    "Players who have led the league in blocks for multiple seasons",
+    "Players with 20+ rebounds in a playoff game since 1990"
   ]
+};
+
+// Level names for the difficulty selector
+const LEVEL_NAMES = {
+  1: "Centel'd",
+  2: "Casual",
+  3: "National TV host",
+  4: "Hoops enjoyer",
+  5: "Sicko"
 };
 
 export default function Home() {
@@ -62,10 +71,16 @@ export default function Home() {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [timerMinutes, setTimerMinutes] = useState(20);
   const [loadingStartTime, setLoadingStartTime] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [difficultyLevel, setDifficultyLevel] = useState<number>(3);
+
+  // Calculate timer based on number of answers
+  const calculateTimerMinutes = (numAnswers: number): number => {
+    // Rule of thumb: max(2, numAnswers/10) minutes, always round up for decimals
+    const minutesFromAnswers = Math.ceil(numAnswers / 10);
+    return Math.max(2, minutesFromAnswers);
+  };
 
   // Expected duration based on prompt complexity
   const getExpectedDuration = (promptText: string): number => {
@@ -98,14 +113,13 @@ export default function Home() {
         },
         body: JSON.stringify({ 
           topic: prompt,
-          timeLimit: timerMinutes * 60, // Convert to seconds
           maxQuestions
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate quiz');
+        throw new Error(errorData.message || errorData.error || 'Failed to generate quiz');
       }
 
       const data = await response.json();
@@ -115,10 +129,21 @@ export default function Home() {
         throw new Error('Invalid quiz data format');
       }
       
+      // If we got an empty quiz, show a helpful message
+      if (data.answers.length === 0) {
+        setError(`We couldn't generate a quiz about "${prompt}". Please try a different topic or be more specific.`);
+        setLoading(false);
+        return;
+      }
+      
+      // Calculate timer based on number of answers
+      const timerMinutes = calculateTimerMinutes(data.answers.length);
+      data.timeLimit = timerMinutes * 60; // Convert to seconds
+      
       setQuiz(data);
     } catch (error: any) {
       console.error('Error generating quiz:', error);
-      setError(error.message || 'Failed to generate quiz. Please try again.');
+      setError(error.message || 'Failed to generate quiz. Please try a different topic or be more specific.');
     } finally {
       setLoading(false);
     }
@@ -140,39 +165,56 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4">
         {!quiz && !loading ? (
           <div className="max-w-3xl mx-auto">
-            <h1 className="text-4xl font-bold text-gray-900 text-center mb-8">SickoHoops</h1>
+            <h1 className="text-4xl font-bold text-gray-900 text-center mb-2">SickoHoops</h1>
+            <p className="text-center text-gray-700 mb-8">Create, play, and challenge your friends with custom NBA quizzes</p>
             
             {error && (
               <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-                {error}
+                <p className="font-medium mb-2">Error:</p>
+                <p>{error}</p>
+                <p className="mt-2 text-sm">
+                  Suggestions:
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>Try a more specific topic (e.g., "NBA scoring leaders since 2010" instead of just "scoring leaders")</li>
+                    <li>Check for typos in your query</li>
+                    <li>Try a different topic altogether</li>
+                    <li>Use the random quiz generator below</li>
+                  </ul>
+                </p>
               </div>
             )}
             
             <form onSubmit={startQuiz} className="space-y-6">
-              {/* Main prompt input */}
-              <div className="relative">
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="What kind of NBA quiz would you like? (e.g., 'Every player to score 2000+ points in a season since 2000', 'All NBA Finals MVPs', 'Players with multiple scoring titles')"
-                  className="w-full h-32 p-4 pr-20 text-gray-900 border rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !prompt.trim()}
-                  className="absolute bottom-4 right-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-orange-300 transition-colors"
-                >
-                  {loading ? 'Generating...' : 'Generate'}
-                </button>
+              {/* Main prompt input with integrated timer */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="relative mb-4">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="What kind of NBA quiz would you like? (e.g., 'Every player to score 2000+ points in a season since 2000', 'All NBA Finals MVPs', 'Players with multiple scoring titles')"
+                    className="w-full h-32 p-4 pr-20 text-gray-900 border rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !prompt.trim()}
+                    className="absolute bottom-4 right-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-orange-300 transition-colors"
+                  >
+                    {loading ? 'Generating...' : 'Play'}
+                  </button>
+                </div>
               </div>
 
-              {/* Difficulty level and timer settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Random prompt generator section */}
+              <div className="mt-6">
+                <p className="text-center text-gray-700 mb-4">Don't have an idea? Generate one below:</p>
+                
                 {/* Difficulty level selector */}
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-gray-700 font-medium mb-2">Sicko Level:</label>
-                  <div className="flex items-center">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                  <div className="flex items-center mb-2">
+                    <span className="text-gray-700 font-medium">Sicko Level:</span>
+                  </div>
+                  <div className="w-full">
                     <input
                       type="range"
                       min="1"
@@ -181,34 +223,17 @@ export default function Home() {
                       onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
-                    <span className="ml-3 text-lg font-bold text-orange-500">{difficultyLevel}</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Centel'd</span>
                     <span>Casual</span>
+                    <span>National TV host</span>
+                    <span>Hoops enjoyer</span>
                     <span>Sicko</span>
                   </div>
                 </div>
-
-                {/* Timer setting */}
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-gray-700 font-medium mb-2">Quiz Timer:</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={timerMinutes}
-                      onChange={(e) => setTimerMinutes(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
-                      className="w-20 px-3 py-2 border rounded-md text-gray-900 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                    <span className="text-gray-700">minutes</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Random prompt generator */}
-              <div className="mt-6">
-                <p className="text-center text-gray-700 mb-3">Don't have a quiz in mind? Get a suggestion below:</p>
+                
+                {/* Random quiz button */}
                 <div className="flex justify-center">
                   <button
                     type="button"
@@ -218,7 +243,7 @@ export default function Home() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
                     </svg>
-                    Random Quiz (Level {difficultyLevel})
+                    Random Quiz ({LEVEL_NAMES[difficultyLevel as keyof typeof LEVEL_NAMES]})
                   </button>
                 </div>
               </div>
@@ -241,6 +266,7 @@ export default function Home() {
                 answers={quiz.answers}
                 timeLimit={quiz.timeLimit}
                 onComplete={handleQuizComplete}
+                quiz_title={quiz.title}
               />
             )}
 

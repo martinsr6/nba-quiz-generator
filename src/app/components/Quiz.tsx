@@ -13,9 +13,10 @@ interface QuizProps {
   answers: Answer[];
   timeLimit: number;
   onComplete: (score: number) => void;
+  quiz_title?: string;
 }
 
-export default function Quiz({ answers = [], timeLimit = 1200, onComplete }: QuizProps) {
+export default function Quiz({ answers = [], timeLimit = 1200, onComplete, quiz_title }: QuizProps) {
   const [input, setInput] = useState('');
   const [foundAnswers, setFoundAnswers] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(timeLimit);
@@ -160,6 +161,64 @@ export default function Quiz({ answers = [], timeLimit = 1200, onComplete }: Qui
     return team;
   };
 
+  // Determine if and what stat value should be shown based on quiz title
+  const shouldShowStatValue = (quizTitle: string | undefined): { show: boolean, label: string } => {
+    if (!quizTitle) return { show: false, label: '' };
+    
+    const title = quizTitle.toLowerCase();
+    
+    // Points/Scoring related
+    if (title.includes('point') || title.includes('score') || title.includes('ppg') || 
+        title.includes('scoring') || title.includes('averaged')) {
+      return { show: true, label: 'PPG' };
+    }
+    
+    // Rebounds related
+    if (title.includes('rebound') || title.includes('rpg') || title.includes('boards')) {
+      return { show: true, label: 'RPG' };
+    }
+    
+    // Assists related
+    if (title.includes('assist') || title.includes('apg')) {
+      return { show: true, label: 'APG' };
+    }
+    
+    // Blocks related
+    if (title.includes('block') || title.includes('bpg')) {
+      return { show: true, label: 'BPG' };
+    }
+    
+    // Steals related
+    if (title.includes('steal') || title.includes('spg')) {
+      return { show: true, label: 'SPG' };
+    }
+    
+    // Field goal percentage
+    if (title.includes('field goal') || title.includes('fg%')) {
+      return { show: true, label: 'FG%' };
+    }
+    
+    // Three point percentage
+    if (title.includes('three') || title.includes('3pt') || title.includes('3p%')) {
+      return { show: true, label: '3P%' };
+    }
+    
+    // Free throw percentage
+    if (title.includes('free throw') || title.includes('ft%')) {
+      return { show: true, label: 'FT%' };
+    }
+    
+    // Minutes played
+    if (title.includes('minute') || title.includes('mpg')) {
+      return { show: true, label: 'MPG' };
+    }
+    
+    // Default case - no specific stat identified
+    return { show: false, label: '' };
+  };
+
+  const statInfo = shouldShowStatValue(quiz_title);
+
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* Header with score and timer */}
@@ -189,26 +248,28 @@ export default function Quiz({ answers = [], timeLimit = 1200, onComplete }: Qui
 
       {/* Grid of answers */}
       <div className="grid grid-cols-3 gap-4">
-        {sortedAnswers.map((answer, index) => (
-          <div
-            key={index}
-            className={`border rounded-lg p-3 ${
-              foundAnswers.has(index) ? 'bg-orange-100 border-orange-300' : 'bg-white'
-            }`}
-          >
-            <div className="grid grid-cols-4 gap-2 text-sm">
-              {answer.points > 0 && (
-                <div className="font-bold text-gray-900">{answer.points.toFixed(1)}</div>
-              )}
-              <div className={`${answer.points > 0 ? 'col-span-2' : 'col-span-3'} text-gray-900`}>
-                {foundAnswers.has(index) || isComplete ? answer.player : ''}
-              </div>
-              <div className="text-right text-gray-900">
-                {formatTeam(answer.team)}
+        {sortedAnswers.map((answer, index) => {
+          return (
+            <div
+              key={index}
+              className={`border rounded-lg p-3 ${
+                foundAnswers.has(index) ? 'bg-orange-100 border-orange-300' : 'bg-white'
+              }`}
+            >
+              <div className="grid grid-cols-4 gap-2 text-sm">
+                {statInfo.show && answer.points > 0 && (
+                  <div className="font-bold text-gray-900">{answer.points.toFixed(1)}</div>
+                )}
+                <div className={`${statInfo.show && answer.points > 0 ? 'col-span-2' : 'col-span-3'} text-gray-900`}>
+                  {foundAnswers.has(index) || isComplete ? answer.player : ''}
+                </div>
+                <div className="text-right text-gray-900">
+                  {formatTeam(answer.team)}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Give up button */}
