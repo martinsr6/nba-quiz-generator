@@ -1,15 +1,64 @@
-# Ansh & Riley Full-Stack Template
+# NBA Quiz Generator
 
-This is a full-stack template project for Software Composers to create  applications with AI.
+An interactive web application that generates NBA-themed quizzes using AI. Test your NBA knowledge with Sporcle-style quizzes about various NBA topics, players, and statistics.
 
-## Getting started
-To create a new project, you go to `/paths`, choose from our list of Paths, and then use Cursor's Composer feature to quickly scaffold your project!
+## Features
 
-You can also edit the Path's prompt template to be whatever you like!
+- AI-powered quiz generation using OpenAI's GPT-4
+- Dynamic scoring system
+- Customizable quiz timer
+- Real-time answer validation
+- Mobile-responsive design
+- Beautiful UI with Tailwind CSS
 
-## Technologies used
-This doesn't really matter, but is useful for the AI to understand more about this project. We are using the following technologies
-- React with Next.js 14 App Router
-- TailwindCSS
-- Firebase Auth, Storage, and Database
-- Multiple AI endpoints including OpenAI, Anthropic, and Replicate using Vercel's AI SDK
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ installed
+- An OpenAI API key
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/martinsr6/nba-quiz-generator.git
+cd nba-quiz-generator
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env.local` file in the root directory and add your OpenAI API key:
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+5. Open [http://localhost:3002](http://localhost:3002) in your browser.
+
+## Usage
+
+1. Enter an NBA-related topic or choose from the example prompts
+2. Set your desired quiz duration
+3. Click "Generate" to create your quiz
+4. Type player names to answer the questions
+5. Try to get the highest score before time runs out!
+
+## Built With
+
+- Next.js 14
+- React 18
+- TypeScript
+- Tailwind CSS
+- OpenAI GPT-4
+
+## Security Note
+
+Never commit your `.env.local` file or share your API keys. The `.env.local` file is listed in `.gitignore` to prevent accidental commits.
